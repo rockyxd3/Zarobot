@@ -1,11 +1,12 @@
 import os
 import re
-import aiohttp
+
 import aiofiles
+import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from py_yt import VideosSearch
-from config import YOUTUBE_IMG_URL
 
+from config import YOUTUBE_IMG_URL
 
 CACHE_DIR = "cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -66,11 +67,7 @@ async def get_thumb(videoid):
         mask = Image.new("L", (width, height), 0)
         draw_mask = ImageDraw.Draw(mask)
 
-        draw_mask.rounded_rectangle(
-            [(0, 0), (width, height)],
-            radius=25,
-            fill=255
-        )
+        draw_mask.rounded_rectangle([(0, 0), (width, height)], radius=25, fill=255)
 
         cover.putalpha(mask)
 
@@ -104,7 +101,7 @@ async def get_thumb(videoid):
             fill="white",
             font=title_font,
             stroke_width=1,
-            stroke_fill="black"
+            stroke_fill="black",
         )
 
         stats = f"Views: {views} | Duration: {duration}"
@@ -117,7 +114,7 @@ async def get_thumb(videoid):
             fill="#ff0099",
             font=stats_font,
             stroke_width=1,
-            stroke_fill="black"
+            stroke_fill="black",
         )
 
         bg.save(final_path)
