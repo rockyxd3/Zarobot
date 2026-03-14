@@ -1,7 +1,8 @@
 import os
-import aiohttp
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+import aiohttp
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 CACHE = "cache"
 os.makedirs(CACHE, exist_ok=True)
@@ -93,31 +94,16 @@ async def get_thumb(*args):
     draw.text((360, 560), title, font=title_font, fill="white")
 
     # played by
-    draw.text(
-        (360, 620),
-        f"Played By : {user}",
-        font=small_font,
-        fill="#e5e5e5"
-    )
+    draw.text((360, 620), f"Played By : {user}", font=small_font, fill="#e5e5e5")
 
     # bot name
-    draw.text(
-        (360, 655),
-        "ʑαʀᴀ ᴍᴜsɪᴄ",
-        font=small_font,
-        fill="#cccccc"
-    )
+    draw.text((360, 655), "ʑαʀᴀ ᴍᴜsɪᴄ", font=small_font, fill="#cccccc")
 
     # footer
     power = "ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍᴇᴄᴏ ʙᴏᴛs 🎧"
     w = draw.textlength(power, font=power_font)
 
-    draw.text(
-        ((1280 - w) / 2, 690),
-        power,
-        font=power_font,
-        fill="white"
-    )
+    draw.text(((1280 - w) / 2, 690), power, font=power_font, fill="white")
 
     path = f"{CACHE}/thumb.png"
     canvas.save(path)
