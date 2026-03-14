@@ -8,9 +8,14 @@ os.makedirs(CACHE, exist_ok=True)
 
 
 async def download(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            return await resp.read()
+    if not url:
+        return None
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                return await resp.read()
+    except:
+        return None
 
 
 def round_corners(img, radius):
@@ -46,7 +51,11 @@ def fit_font(draw, text, font_path, max_width, start_size=60, min_size=25):
     size = start_size
 
     while size > min_size:
-        font = ImageFont.truetype(font_path, size)
+        try:
+            font = ImageFont.truetype(font_path, size)
+        except:
+            return ImageFont.load_default()
+
         w = draw.textlength(text, font=font)
 
         if w <= max_width:
@@ -54,13 +63,23 @@ def fit_font(draw, text, font_path, max_width, start_size=60, min_size=25):
 
         size -= 2
 
-    return ImageFont.truetype(font_path, min_size)
+    try:
+        return ImageFont.truetype(font_path, min_size)
+    except:
+        return ImageFont.load_default()
 
 
-async def get_thumb(title, user, thumb_url, user_photo=None):
+async def get_thumb(title=None, user="Unknown", thumb_url=None, user_photo=None):
+
+    # fallback background
+    yt = Image.new("RGB", (1280, 720), (30, 30, 30))
 
     data = await download(thumb_url)
-    yt = Image.open(BytesIO(data)).convert("RGB")
+    if data:
+        try:
+            yt = Image.open(BytesIO(data)).convert("RGB")
+        except:
+            pass
 
     bg = yt.resize((1280, 720)).filter(ImageFilter.GaussianBlur(35))
     canvas = Image.new("RGB", (1280, 720))
@@ -68,7 +87,7 @@ async def get_thumb(title, user, thumb_url, user_photo=None):
 
     draw = ImageDraw.Draw(canvas)
 
-    # top thumbnail card
+    # main thumbnail card
     card = yt.resize((900, 400))
     card = round_corners(card, 40)
     canvas.paste(card, (190, 90), card)
@@ -79,10 +98,16 @@ async def get_thumb(title, user, thumb_url, user_photo=None):
     canvas.paste(glass, (190, 520), glass)
 
     # avatar
+    avatar = None
     if user_photo:
         avatar_data = await download(user_photo)
-        avatar = Image.open(BytesIO(avatar_data)).resize((110, 110))
-    else:
+        if avatar_data:
+            try:
+                avatar = Image.open(BytesIO(avatar_data)).resize((110, 110))
+            except:
+                avatar = None
+
+    if avatar is None:
         avatar = yt.resize((110, 110))
 
     avatar = round_corners(avatar, 25)
@@ -92,7 +117,7 @@ async def get_thumb(title, user, thumb_url, user_photo=None):
     small_font_path = "AloneMusic/assets/font2.ttf"
 
     try:
-        title_font = fit_font(draw, title, font_path, 650)
+        title_font = fit_font(draw, title or "Unknown Title", font_path, 650)
         small_font = ImageFont.truetype(small_font_path, 28)
         power_font = ImageFont.truetype(small_font_path, 22)
     except:
@@ -100,7 +125,8 @@ async def get_thumb(title, user, thumb_url, user_photo=None):
         small_font = ImageFont.load_default()
         power_font = ImageFont.load_default()
 
-    # wrap title
+    title = title or "Unknown Title"
+
     lines = wrap_text(draw, title, title_font, 650)
 
     y = 560
