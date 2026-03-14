@@ -1,149 +1,138 @@
 import os
-import re
 import aiohttp
-import aiofiles
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from py_yt import VideosSearch
-from config import YOUTUBE_IMG_URL
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+CACHE = "cache"
+os.makedirs(CACHE, exist_ok=True)
 
 
-CACHE_DIR = "cache"
-os.makedirs(CACHE_DIR, exist_ok=True)
+async def download(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            return await resp.read()
 
 
-def resize_keep_ratio(max_w, max_h, img):
-    w_ratio = max_w / img.size[0]
-    h_ratio = max_h / img.size[1]
-    new_w = int(w_ratio * img.size[0])
-    new_h = int(h_ratio * img.size[1])
-    return img.resize((new_w, new_h))
+def round_corners(img, radius):
+    mask = Image.new("L", img.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle((0, 0, img.size[0], img.size[1]), radius, fill=255)
+    img.putalpha(mask)
+    return img
 
 
-async def get_thumb(videoid):
+def wrap_text(draw, text, font, max_width):
+    words = text.split()
+    lines = []
+    current = ""
 
-    final_path = f"{CACHE_DIR}/{videoid}.png"
+    for word in words:
+        test = current + " " + word if current else word
+        w = draw.textlength(test, font=font)
 
-    if os.path.exists(final_path):
-        return final_path
+        if w <= max_width:
+            current = test
+        else:
+            lines.append(current)
+            current = word
 
-    try:
+    if current:
+        lines.append(current)
 
-        url = f"https://www.youtube.com/watch?v={videoid}"
-        results = VideosSearch(url, limit=1)
-
-        for result in (await results.next())["result"]:
-
-            title = result.get("title", "Unknown Title")
-            title = re.sub(r"\W+", " ", title).title()
-
-            duration = result.get("duration", "Unknown")
-
-            try:
-                views = result["viewCount"]["short"]
-            except:
-                views = "Unknown"
-
-            thumb_url = result["thumbnails"][0]["url"].split("?")[0]
-
-        thumb_path = f"{CACHE_DIR}/thumb_{videoid}.png"
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(thumb_url) as resp:
-                if resp.status == 200:
-                    async with aiofiles.open(thumb_path, "wb") as f:
-                        await f.write(await resp.read())
-
-        youtube = Image.open(thumb_path)
-
-        bg = resize_keep_ratio(1280, 720, youtube)
-        bg = bg.filter(ImageFilter.GaussianBlur(25))
-        bg = ImageEnhance.Brightness(bg).enhance(0.4)
-
-        width = 840
-        height = 460
-        cover = youtube.resize((width, height))
-
-        mask = Image.new("L", (width, height), 0)
-        draw_mask = ImageDraw.Draw(mask)
-
-        draw_mask.rounded_rectangle(
-            [(0, 0), (width, height)],
-            radius=25,
-            fill=255
-        )
-
-        cover.putalpha(mask)
-
-        center_x = 640
-        center_y = 300
-
-        x = center_x - width // 2
-        y = center_y - height // 2
-
-        bg.paste(cover, (x, y), cover)
-
-        draw = ImageDraw.Draw(bg)
-
-        try:
-            title_font = ImageFont.truetype("AloneMusic/assets/font.ttf", 45)
-            stats_font = ImageFont.truetype("AloneMusic/assets/font2.ttf", 30)
-        except:
-            title_font = ImageFont.load_default()
-            stats_font = ImageFont.load_default()
-
-        if len(title) > 45:
-            title = title[:45] + "..."
-
-        text_y = y + height + 50
-
-        w = draw.textlength(title, font=title_font)
-
-        draw.text(
-            ((1280 - w) / 2, text_y),
-            title,
-            fill="white",
-            font=title_font,
-            stroke_width=1,
-            stroke_fill="black"
-        )
-
-        stats = f"Views: {views} | Duration: {duration}"
-
-        w2 = draw.textlength(stats, font=stats_font)
-
-        draw.text(
-            ((1280 - w2) / 2, text_y + 70),
-            stats,
-            fill="#ff0099",
-            font=stats_font,
-            stroke_width=1,
-            stroke_fill="black"
-        )
-
-        bg.save(final_path)
-
-        try:
-            os.remove(thumb_path)
-        except:
-            pass
-
-        return final_path
-
-    except Exception as e:
-        print(e)
-        return YOUTUBE_IMG_URL
+    return lines
 
 
-async def get_qthumb(videoid):
+def fit_font(draw, text, font_path, max_width, start_size=60, min_size=25):
+    size = start_size
+
+    while size > min_size:
+        font = ImageFont.truetype(font_path, size)
+        w = draw.textlength(text, font=font)
+
+        if w <= max_width:
+            return font
+
+        size -= 2
+
+    return ImageFont.truetype(font_path, min_size)
+
+
+async def get_thumb(title, user, thumb_url, user_photo=None):
+
+    data = await download(thumb_url)
+    yt = Image.open(BytesIO(data)).convert("RGB")
+
+    bg = yt.resize((1280, 720)).filter(ImageFilter.GaussianBlur(35))
+    canvas = Image.new("RGB", (1280, 720))
+    canvas.paste(bg)
+
+    draw = ImageDraw.Draw(canvas)
+
+    # top thumbnail card
+    card = yt.resize((900, 400))
+    card = round_corners(card, 40)
+    canvas.paste(card, (190, 90), card)
+
+    # glass info card
+    glass = Image.new("RGBA", (900, 180), (255, 255, 255, 40))
+    glass = round_corners(glass, 35)
+    canvas.paste(glass, (190, 520), glass)
+
+    # avatar
+    if user_photo:
+        avatar_data = await download(user_photo)
+        avatar = Image.open(BytesIO(avatar_data)).resize((110, 110))
+    else:
+        avatar = yt.resize((110, 110))
+
+    avatar = round_corners(avatar, 25)
+    canvas.paste(avatar, (220, 550), avatar)
+
+    font_path = "AloneMusic/assets/font.ttf"
+    small_font_path = "AloneMusic/assets/font2.ttf"
 
     try:
-        url = f"https://www.youtube.com/watch?v={videoid}"
-        results = VideosSearch(url, limit=1)
+        title_font = fit_font(draw, title, font_path, 650)
+        small_font = ImageFont.truetype(small_font_path, 28)
+        power_font = ImageFont.truetype(small_font_path, 22)
+    except:
+        title_font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+        power_font = ImageFont.load_default()
 
-        for result in (await results.next())["result"]:
-            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
+    # wrap title
+    lines = wrap_text(draw, title, title_font, 650)
 
-        return thumbnail
+    y = 560
+    for line in lines[:2]:
+        draw.text((360, y), line, font=title_font, fill="white")
+        y += 45
 
-    except Exception:
-        return YOUTUBE_IMG_URL
+    draw.text(
+        (360, 620),
+        f"Played By : {user}",
+        font=small_font,
+        fill="#e5e5e5"
+    )
+
+    draw.text(
+        (360, 655),
+        "ʑαʀᴀ ᴍᴜsɪᴄ",
+        font=small_font,
+        fill="#cccccc"
+    )
+
+    power = "ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍᴇᴄᴏ ʙᴏᴛs 🎧"
+    w = draw.textlength(power, font=power_font)
+
+    draw.text(
+        ((1280 - w) / 2, 690),
+        power,
+        font=power_font,
+        fill="white"
+    )
+
+    path = f"{CACHE}/thumb.png"
+    canvas.save(path)
+
+    return path
