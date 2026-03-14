@@ -89,7 +89,7 @@ autoclean = []
 confirmer = {}
 
 
-START_IMG_URL = getenv(
+START_VID_URL = getenv(
     "START_VID_URL",
     "https://files.catbox.moe/sck03x.mp4",
 )
