@@ -1,295 +1,149 @@
-# a part of Opus Music Project 2026 ©
-# this code is & will be our property as it is or even after modified 
-# must give credits to @x_ifeelram  if used this code anywhere ever 
-# change font dir as per your repo dir & this code only works which repository is using yt-search-python install it using pip
-
 import os
 import re
-import textwrap
-import numpy as np
-import aiofiles
 import aiohttp
-from PIL import (
-    Image,
-    ImageDraw,
-    ImageEnhance,
-    ImageFilter,
-    ImageFont,
-)
+import aiofiles
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 from py_yt import VideosSearch
 from config import YOUTUBE_IMG_URL
 
 
-def changeImageSize(maxWidth, maxHeight, image):
-    widthRatio = maxWidth / image.size[0]
-    heightRatio = maxHeight / image.size[1]
-    ratio = min(widthRatio, heightRatio)
-    newWidth = int(image.size[0] * ratio)
-    newHeight = int(image.size[1] * ratio)
-    try:
-        resample = Image.Resampling.LANCZOS
-    except AttributeError:
-        resample = Image.ANTIALIAS
-    return image.resize((newWidth, newHeight), resample)
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-def get_dominant_color(image):
-    image = image.convert("RGB").resize((50, 50))
-    pixels = np.array(image).reshape(-1, 3)
-    avg_color = tuple(pixels.mean(axis=0).astype(int))
-    if sum(avg_color) < 200:
-        return tuple(min(255, int(c * 1.5)) for c in avg_color)
-    return avg_color
-
-
-def get_contrasting_color(bg_color):
-    luminance = (0.299 * bg_color[0] + 0.587 * bg_color[1] + 0.114 * bg_color[2])
-    return (255, 255, 255) if luminance < 128 else (50, 50, 50)
-
-
-def extract_video_id(value: str):
-    if not value:
-        return None
-    s = str(value).strip()
-    if re.fullmatch(r"[A-Za-z0-9_-]{11}", s):
-        return s
-    m = re.search(r"(?:v=|\/shorts\/|youtu\.be\/)([A-Za-z0-9_-]{11})", s)
-    if m:
-        return m.group(1)
-    m = re.search(r"([A-Za-z0-9_-]{11})", s)
-    return m.group(1) if m else None
+def resize_keep_ratio(max_w, max_h, img):
+    w_ratio = max_w / img.size[0]
+    h_ratio = max_h / img.size[1]
+    new_w = int(w_ratio * img.size[0])
+    new_h = int(h_ratio * img.size[1])
+    return img.resize((new_w, new_h))
 
 
 async def get_thumb(videoid):
-    videoid = extract_video_id(videoid)
-    if not videoid:
-        return YOUTUBE_IMG_URL
 
-    final_path = f"cache/{videoid}.png"
-    if os.path.isfile(final_path):
+    final_path = f"{CACHE_DIR}/{videoid}.png"
+
+    if os.path.exists(final_path):
         return final_path
 
     try:
-        results = VideosSearch(videoid, limit=1)
-        result_data = await results.next()
-        if not result_data.get("result"):
-            return YOUTUBE_IMG_URL
 
-        picked = None
-        for it in result_data["result"]:
-            vid = it.get("id") or extract_video_id(it.get("link", "")) or extract_video_id(it.get("url", ""))
-            if vid == videoid:
-                picked = it
-                break
-        if not picked:
-            picked = result_data["result"][0]
+        url = f"https://www.youtube.com/watch?v={videoid}"
+        results = VideosSearch(url, limit=1)
 
-        title = re.sub(r"\W+", " ", picked.get("title", "Unknown Track")).title()
-        duration = picked.get("duration", "00:00")
-        thumbs = picked.get("thumbnails") or []
-        if not thumbs:
-            return YOUTUBE_IMG_URL
-        thumbnail_url = (thumbs[-1].get("url") or thumbs[0].get("url") or "").split("?")[0]
-        if not thumbnail_url:
-            return YOUTUBE_IMG_URL
+        for result in (await results.next())["result"]:
 
-        views = picked.get("viewCount", {}).get("short", "0 views")
-        channel = picked.get("channel", {}).get("name", "Unknown Author")
+            title = result.get("title", "Unknown Title")
+            title = re.sub(r"\W+", " ", title).title()
 
-        os.makedirs("cache", exist_ok=True)
-        thumb_path = f"cache/thumb{videoid}.png"
+            duration = result.get("duration", "Unknown")
+
+            try:
+                views = result["viewCount"]["short"]
+            except:
+                views = "Unknown"
+
+            thumb_url = result["thumbnails"][0]["url"].split("?")[0]
+
+        thumb_path = f"{CACHE_DIR}/thumb_{videoid}.png"
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(thumbnail_url) as resp:
-                if resp.status != 200:
-                    return YOUTUBE_IMG_URL
-                async with aiofiles.open(thumb_path, "wb") as f:
-                    await f.write(await resp.read())
+            async with session.get(thumb_url) as resp:
+                if resp.status == 200:
+                    async with aiofiles.open(thumb_path, "wb") as f:
+                        await f.write(await resp.read())
 
-        try:
-            youtube = Image.open(thumb_path)
-        except:
-            os.remove(thumb_path) if os.path.exists(thumb_path) else None
-            return YOUTUBE_IMG_URL
+        youtube = Image.open(thumb_path)
 
-        full_bg = changeImageSize(1280, 720, youtube.copy()).convert("RGBA")
-        blurred_bg = full_bg.filter(ImageFilter.GaussianBlur(48))
+        bg = resize_keep_ratio(1280, 720, youtube)
+        bg = bg.filter(ImageFilter.GaussianBlur(25))
+        bg = ImageEnhance.Brightness(bg).enhance(0.4)
 
-        bar_color = get_dominant_color(youtube.copy())
-        accent = tuple(min(255, int(c * 1.25) + 20) for c in bar_color)
-        contrast_color = get_contrasting_color(bar_color)
+        width = 840
+        height = 460
+        cover = youtube.resize((width, height))
 
-        enhancer_b = ImageEnhance.Brightness(blurred_bg).enhance(0.48)
-        enhancer_c = ImageEnhance.Color(enhancer_b).enhance(0.78)
-        bg = enhancer_c
-
-        color_overlay = Image.new("RGBA", bg.size, (accent[0], accent[1], accent[2], 140))
-        bg = Image.alpha_composite(bg, color_overlay)
-
-        subtle_frost = Image.new("RGBA", bg.size, (255, 255, 255, 12))
-        bg = Image.alpha_composite(bg, subtle_frost)
-
-        glass_layer = Image.new("RGBA", bg.size, (0, 0, 0, 0))
-        glass_size = (int(bg.width * 0.78), int(bg.height * 0.62))
-        glass = Image.new("RGBA", glass_size, (accent[0], accent[1], accent[2], 32))
-        glass = glass.filter(ImageFilter.GaussianBlur(34))
-        glass_pos = ((bg.width - glass.width) // 2, (bg.height - glass.height) // 2 - 10)
-        glass_layer.paste(glass, glass_pos, glass)
-        bg = Image.alpha_composite(bg, glass_layer)
-
-        depth_tint = Image.new("RGBA", bg.size, (12, 20, 35, 72))
-        bg = Image.alpha_composite(bg, depth_tint)
-
-        center_thumb = changeImageSize(940, 420, youtube.copy()).convert("RGBA")
-        thumb_pos = ((bg.width - center_thumb.width) // 2, 90)
-
-        enhancer_brightness = ImageEnhance.Brightness(center_thumb).enhance(1.05)
-        enhancer_contrast = ImageEnhance.Contrast(enhancer_brightness).enhance(1.18)
-        center_thumb = enhancer_contrast
-
-        glow_layer = Image.new("RGBA", bg.size, (0, 0, 0, 0))
-        glow_size = (center_thumb.width + 140, center_thumb.height + 140)
-        glow = Image.new("RGBA", glow_size, (bar_color[0], bar_color[1], bar_color[2], 80))
-        glow = glow.filter(ImageFilter.GaussianBlur(54))
-        glow_pos = (thumb_pos[0] - 70, thumb_pos[1] - 70)
-        glow_layer.paste(glow, glow_pos, glow)
-        bg = Image.alpha_composite(bg, glow_layer)
-
-        mask = Image.new("L", center_thumb.size, 0)
+        mask = Image.new("L", (width, height), 0)
         draw_mask = ImageDraw.Draw(mask)
+
         draw_mask.rounded_rectangle(
-            [0, 0, center_thumb.width, center_thumb.height],
-            radius=40,
-            fill=255,
-        )
-        bg.paste(center_thumb, thumb_pos, mask)
-
-        thirty = 30
-        panel_box = (
-            thumb_pos[0] - thirty,
-            thumb_pos[1] - thirty,
-            thumb_pos[0] + center_thumb.width + thirty,
-            thumb_pos[1] + center_thumb.height + thirty,
-        )
-        left, top, right, bottom = panel_box
-        left = max(0, left)
-        top = max(0, top)
-        right = min(bg.width, right)
-        bottom = min(bg.height, bottom)
-
-        cropped = bg.crop((left, top, right, bottom)).convert("RGBA")
-        blurred_panel = cropped.filter(ImageFilter.GaussianBlur(22))
-        white_overlay = Image.new("RGBA", blurred_panel.size, (255, 255, 255, 50))
-        blended_panel = Image.alpha_composite(blurred_panel, white_overlay)
-
-        panel_mask = Image.new("L", blended_panel.size, 0)
-        pm_draw = ImageDraw.Draw(panel_mask)
-        pm_draw.rounded_rectangle(
-            [0, 0, blended_panel.width, blended_panel.height],
-            radius=40,
-            fill=255,
+            [(0, 0), (width, height)],
+            radius=25,
+            fill=255
         )
 
-        panel_canvas = Image.new("RGBA", bg.size, (0, 0, 0, 0))
-        panel_canvas.paste(blended_panel, (left, top), panel_mask)
+        cover.putalpha(mask)
 
-        border_draw = ImageDraw.Draw(panel_canvas)
-        border_draw.rounded_rectangle(
-            [left, top, right, bottom],
-            radius=40,
-            outline=(255, 255, 255, 70),
-            width=2,
-        )
+        center_x = 640
+        center_y = 300
 
-        bg = Image.alpha_composite(bg, panel_canvas)
+        x = center_x - width // 2
+        y = center_y - height // 2
 
-        mask = Image.new("L", center_thumb.size, 0)
-        draw_mask = ImageDraw.Draw(mask)
-        draw_mask.rounded_rectangle(
-            [0, 0, center_thumb.width, center_thumb.height],
-            radius=40,
-            fill=255,
-        )
-        bg.paste(center_thumb, thumb_pos, mask)
-
-        def safe_font(path, size):
-            try:
-                return ImageFont.truetype(path, size)
-            except:
-                return ImageFont.load_default()
-
-        font_title = safe_font("ShrutixMusic/assets/font2.ttf", 32)
-        font_small = safe_font("ShrutixMusic/assets/font.ttf", 28)
-        font_brand = safe_font("ShrutixMusic/assets.font.ttf", 40) if False else safe_font("ShrutixMusic/assets/font.ttf", 40)
+        bg.paste(cover, (x, y), cover)
 
         draw = ImageDraw.Draw(bg)
 
-        bar_width = 15
-        bar_height = center_thumb.height
-        bar_radius = 12
-        bar_y = thumb_pos[1]
+        try:
+            title_font = ImageFont.truetype("AloneMusic/assets/font.ttf", 45)
+            stats_font = ImageFont.truetype("AloneMusic/assets/font2.ttf", 30)
+        except:
+            title_font = ImageFont.load_default()
+            stats_font = ImageFont.load_default()
 
-        duration_pos = (thumb_pos[0] - 160, bar_y - 40)
-        draw.text(duration_pos, duration[:23], fill="white", font=font_small)
-        dur_bbox = draw.textbbox(duration_pos, duration[:23], font=font_small)
-        dur_center_x = (dur_bbox[0] + dur_bbox[2]) // 2
-        bar_x = dur_center_x - (bar_width // 2)
+        if len(title) > 45:
+            title = title[:45] + "..."
 
-        draw.rounded_rectangle(
-            [bar_x, bar_y, bar_x + bar_width, bar_y + bar_height],
-            radius=bar_radius,
-            fill=(150, 150, 150, 220),
-        )
+        text_y = y + height + 50
 
-        played_ratio = 0.25
-        fill_height = int(bar_height * played_ratio)
+        w = draw.textlength(title, font=title_font)
 
-        bright_bar = tuple(min(255, c + 40) for c in bar_color)
-        draw.rounded_rectangle(
-            [bar_x, bar_y + bar_height - fill_height, bar_x + bar_width, bar_y + bar_height],
-            radius=bar_radius,
-            fill=(bright_bar[0], bright_bar[1], bright_bar[2], 255),
-        )
-
-        draw.text((bar_x - 50, bar_y + bar_height + 10), "00:25", fill="white", font=font_small)
-
-        text_left = thumb_pos[0]
-        text_top = thumb_pos[1] + center_thumb.height + 33
-        title_short = textwrap.shorten(title, width=50, placeholder="...")
         draw.text(
-            (text_left, text_top),
-            title_short,
+            ((1280 - w) / 2, text_y),
+            title,
             fill="white",
-            font=font_title,
+            font=title_font,
             stroke_width=1,
-            stroke_fill="black",
-        )
-        draw.text(
-            (text_left, text_top + 44),
-            f"{channel} | {views[:23]}",
-            fill="white",
-            font=font_small,
-            stroke_width=1,
-            stroke_fill="black",
+            stroke_fill="black"
         )
 
-        rec_text = "Hi-Res"
-        rec_bbox = draw.textbbox((0, 0), rec_text, font=font_brand)
-        rec_w = rec_bbox[2] - rec_bbox[0]
-        rec_h = rec_bbox[3] - rec_bbox[1]
-        rec_x = thumb_pos[0] + center_thumb.width + 35
-        rec_y = thumb_pos[1] + (center_thumb.height // 2) - (rec_h // 2)
-        draw.text((rec_x, rec_y), rec_text, fill="white", font=font_brand)
+        stats = f"Views: {views} | Duration: {duration}"
+
+        w2 = draw.textlength(stats, font=stats_font)
+
+        draw.text(
+            ((1280 - w2) / 2, text_y + 70),
+            stats,
+            fill="#ff0099",
+            font=stats_font,
+            stroke_width=1,
+            stroke_fill="black"
+        )
+
+        bg.save(final_path)
 
         try:
             os.remove(thumb_path)
         except:
             pass
 
-        bg.save(final_path, format="PNG")
         return final_path
 
     except Exception as e:
-        print("Thumb error:", e)
+        print(e)
+        return YOUTUBE_IMG_URL
 
+
+async def get_qthumb(videoid):
+
+    try:
+        url = f"https://www.youtube.com/watch?v={videoid}"
+        results = VideosSearch(url, limit=1)
+
+        for result in (await results.next())["result"]:
+            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
+
+        return thumbnail
+
+    except Exception:
         return YOUTUBE_IMG_URL
