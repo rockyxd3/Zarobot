@@ -90,7 +90,7 @@ confirmer = {}
 
 
 START_IMG_URL = getenv(
-    "START_IMG_URL",
+    "START_VID_URL",
     "https://files.catbox.moe/sck03x.mp4",
 )
 PING_IMG_URL = getenv(
