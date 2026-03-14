@@ -26,61 +26,32 @@ def round_corners(img, radius):
     return img
 
 
-def wrap_text(draw, text, font, max_width):
-    words = text.split()
-    lines = []
-    current = ""
+async def get_thumb(*args):
 
-    for word in words:
-        test = current + " " + word if current else word
-        w = draw.textlength(test, font=font)
+    # default values
+    title = "Unknown Song"
+    user = "Unknown"
+    thumb_url = None
 
-        if w <= max_width:
-            current = test
-        else:
-            lines.append(current)
-            current = word
+    # support old play.py formats
+    if len(args) == 1:
+        videoid = args[0]
+        thumb_url = f"https://img.youtube.com/vi/{videoid}/maxresdefault.jpg"
 
-    if current:
-        lines.append(current)
+    elif len(args) == 3:
+        title, user, thumb_url = args
 
-    return lines
-
-
-def fit_font(draw, text, font_path, max_width, start_size=60, min_size=25):
-    size = start_size
-
-    while size > min_size:
-        try:
-            font = ImageFont.truetype(font_path, size)
-        except:
-            return ImageFont.load_default()
-
-        w = draw.textlength(text, font=font)
-
-        if w <= max_width:
-            return font
-
-        size -= 2
-
-    try:
-        return ImageFont.truetype(font_path, min_size)
-    except:
-        return ImageFont.load_default()
-
-
-async def get_thumb(title=None, user="Unknown", thumb_url=None, user_photo=None):
-
-    # fallback background
-    yt = Image.new("RGB", (1280, 720), (30, 30, 30))
+    elif len(args) >= 4:
+        title, user, thumb_url, _ = args
 
     data = await download(thumb_url)
-    if data:
-        try:
-            yt = Image.open(BytesIO(data)).convert("RGB")
-        except:
-            pass
 
+    if data:
+        yt = Image.open(BytesIO(data)).convert("RGB")
+    else:
+        yt = Image.new("RGB", (1280, 720), (40, 40, 40))
+
+    # background blur
     bg = yt.resize((1280, 720)).filter(ImageFilter.GaussianBlur(35))
     canvas = Image.new("RGB", (1280, 720))
     canvas.paste(bg)
@@ -97,43 +68,31 @@ async def get_thumb(title=None, user="Unknown", thumb_url=None, user_photo=None)
     glass = round_corners(glass, 35)
     canvas.paste(glass, (190, 520), glass)
 
-    # avatar
-    avatar = None
-    if user_photo:
-        avatar_data = await download(user_photo)
-        if avatar_data:
-            try:
-                avatar = Image.open(BytesIO(avatar_data)).resize((110, 110))
-            except:
-                avatar = None
+    # bot avatar (girl image)
+    avatar_path = "AloneMusic/assets/girl.png"
 
-    if avatar is None:
+    try:
+        avatar = Image.open(avatar_path).resize((110, 110))
+    except:
         avatar = yt.resize((110, 110))
 
     avatar = round_corners(avatar, 25)
     canvas.paste(avatar, (220, 550), avatar)
 
-    font_path = "AloneMusic/assets/font.ttf"
-    small_font_path = "AloneMusic/assets/font2.ttf"
-
+    # fonts
     try:
-        title_font = fit_font(draw, title or "Unknown Title", font_path, 650)
-        small_font = ImageFont.truetype(small_font_path, 28)
-        power_font = ImageFont.truetype(small_font_path, 22)
+        title_font = ImageFont.truetype("AloneMusic/assets/font.ttf", 50)
+        small_font = ImageFont.truetype("AloneMusic/assets/font2.ttf", 28)
+        power_font = ImageFont.truetype("AloneMusic/assets/font2.ttf", 22)
     except:
         title_font = ImageFont.load_default()
         small_font = ImageFont.load_default()
         power_font = ImageFont.load_default()
 
-    title = title or "Unknown Title"
+    # title
+    draw.text((360, 560), title, font=title_font, fill="white")
 
-    lines = wrap_text(draw, title, title_font, 650)
-
-    y = 560
-    for line in lines[:2]:
-        draw.text((360, y), line, font=title_font, fill="white")
-        y += 45
-
+    # played by
     draw.text(
         (360, 620),
         f"Played By : {user}",
@@ -141,6 +100,7 @@ async def get_thumb(title=None, user="Unknown", thumb_url=None, user_photo=None)
         fill="#e5e5e5"
     )
 
+    # bot name
     draw.text(
         (360, 655),
         "ʑαʀᴀ ᴍᴜsɪᴄ",
@@ -148,6 +108,7 @@ async def get_thumb(title=None, user="Unknown", thumb_url=None, user_photo=None)
         fill="#cccccc"
     )
 
+    # footer
     power = "ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍᴇᴄᴏ ʙᴏᴛs 🎧"
     w = draw.textlength(power, font=power_font)
 
