@@ -1,15 +1,13 @@
 import os
+import random
 import re
 import textwrap
-import random
 
 import aiofiles
 import aiohttp
-from PIL import Image, ImageDraw, ImageEnhance, ImageOps, ImageFilter, ImageFont
-from unidecode import unidecode
+from PIL import (Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont)
 from youtubesearchpython.__future__ import VideosSearch
 
-from Spy import app
 from config import YOUTUBE_IMG_URL
 
 
@@ -71,7 +69,7 @@ async def get_thumb(videoid):
                     await f.close()
 
         youtube = Image.open(f"cache/thumb{videoid}.png")
-        bg = Image.open(f"Spy/assets/dil.png")
+        bg = Image.open("Spy/assets/dil.png")
         image1 = changeImageSize(1280, 720, youtube)
         image2 = image1.convert("RGBA")
         background = image2.filter(filter=ImageFilter.BoxBlur(9))
@@ -95,14 +93,18 @@ async def get_thumb(videoid):
         border_size = 13
         border_color = get_random_color()
 
-        bordered_logo = Image.new("RGBA", (logo.width + 2 * border_size, logo.height + 2 * border_size), (0, 0, 0, 0))
+        bordered_logo = Image.new(
+            "RGBA",
+            (logo.width + 2 * border_size, logo.height + 2 * border_size),
+            (0, 0, 0, 0),
+        )
         bordered_logo.paste(logo, (border_size, border_size))
 
         draw = ImageDraw.Draw(bordered_logo)
         draw.rectangle(
             [(0, 0), (bordered_logo.width - 1, bordered_logo.height - 1)],
             outline=border_color,
-            width=border_size
+            width=border_size,
         )
 
         background.paste(bordered_logo, (750, 160), bordered_logo)
@@ -110,12 +112,12 @@ async def get_thumb(videoid):
 
         draw = ImageDraw.Draw(background)
         font = ImageFont.truetype("Spy/assets/font2.ttf", 45)
-        font2 = ImageFont.truetype("Spy/assets/font2.ttf", 70)
+        ImageFont.truetype("Spy/assets/font2.ttf", 70)
         arial = ImageFont.truetype("Spy/assets/font2.ttf", 30)
         name_font = ImageFont.truetype("Spy/assets/font.ttf", 30)
         para = textwrap.wrap(title, width=30)
         j = 0
-        draw.text((5, 5), f"SpyXDil", fill="white", font=name_font)
+        draw.text((5, 5), "SpyXDil", fill="white", font=name_font)
         for line in para:
             if j == 1:
                 j += 1
