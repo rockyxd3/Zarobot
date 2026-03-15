@@ -6,7 +6,7 @@
 import os
 import re
 import textwrap
-import AloneMusic as app
+import numpy as np
 import aiofiles
 import aiohttp
 from PIL import (
