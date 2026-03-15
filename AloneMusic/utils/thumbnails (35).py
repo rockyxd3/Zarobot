@@ -4,10 +4,8 @@ import re
 import aiofiles
 import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from unidecode import unidecode
 from py_yt import VideosSearch
 
-from ShrutixMusic import nand
 from config import YOUTUBE_IMG_URL
 
 FAILED = "https://te.legra.ph/file/6298d377ad3eb46711644.jpg"
@@ -37,6 +35,7 @@ ICONS_Y = BAR_Y + 48
 
 MAX_TITLE_WIDTH = 580
 
+
 def trim_to_width(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> str:
     ellipsis = "…"
     if font.getlength(text) <= max_w:
@@ -45,6 +44,7 @@ def trim_to_width(text: str, font: ImageFont.FreeTypeFont, max_w: int) -> str:
         if font.getlength(text[:i] + ellipsis) <= max_w:
             return text[:i] + ellipsis
     return ellipsis
+
 
 async def get_thumb(videoid):
     cache_path = f"cache/{videoid}.png"
@@ -65,9 +65,18 @@ async def get_thumb(videoid):
             duration = data.get("duration")
             views = data.get("viewCount", {}).get("short", "Unknown Views")
         except Exception:
-            title, thumbnail, duration, views = "Unsupported Title", FAILED, None, "Unknown Views"
+            title, thumbnail, duration, views = (
+                "Unsupported Title",
+                FAILED,
+                None,
+                "Unknown Views",
+            )
 
-        is_live = not duration or str(duration).strip().lower() in {"", "live", "live now"}
+        is_live = not duration or str(duration).strip().lower() in {
+            "",
+            "live",
+            "live now",
+        }
         duration_text = "Live" if is_live else duration or "Unknown Mins"
 
         thumb_path = f"cache/thumb{videoid}.png"
@@ -80,11 +89,9 @@ async def get_thumb(videoid):
                         await f.close()
         except Exception:
             return FAILED
-        
 
         base = Image.open(thumb_path).resize((1280, 720)).convert("RGBA")
         bg = ImageEnhance.Brightness(base.filter(ImageFilter.BoxBlur(10))).enhance(0.6)
-
 
         panel_area = bg.crop((PANEL_X, PANEL_Y, PANEL_X + PANEL_W, PANEL_Y + PANEL_H))
         overlay = Image.new("RGBA", (PANEL_W, PANEL_H), (255, 255, 255, TRANSPARENCY))
@@ -105,26 +112,55 @@ async def get_thumb(videoid):
         ImageDraw.Draw(tmask).rounded_rectangle((0, 0, THUMB_W, THUMB_H), 20, fill=255)
         bg.paste(thumb, (THUMB_X, THUMB_Y), tmask)
 
-        draw.text((TITLE_X, TITLE_Y), trim_to_width(title, title_font, MAX_TITLE_WIDTH), fill="black", font=title_font)
-        draw.text((META_X, META_Y), f"YouTube | {views}", fill="black", font=regular_font)
-
+        draw.text(
+            (TITLE_X, TITLE_Y),
+            trim_to_width(title, title_font, MAX_TITLE_WIDTH),
+            fill="black",
+            font=title_font,
+        )
+        draw.text(
+            (META_X, META_Y), f"YouTube | {views}", fill="black", font=regular_font
+        )
 
         draw.line([(BAR_X, BAR_Y), (BAR_X + BAR_RED_LEN, BAR_Y)], fill="red", width=6)
-        draw.line([(BAR_X + BAR_RED_LEN, BAR_Y), (BAR_X + BAR_TOTAL_LEN, BAR_Y)], fill="gray", width=5)
-        draw.ellipse([(BAR_X + BAR_RED_LEN - 7, BAR_Y - 7), (BAR_X + BAR_RED_LEN + 7, BAR_Y + 7)], fill="red")
+        draw.line(
+            [(BAR_X + BAR_RED_LEN, BAR_Y), (BAR_X + BAR_TOTAL_LEN, BAR_Y)],
+            fill="gray",
+            width=5,
+        )
+        draw.ellipse(
+            [
+                (BAR_X + BAR_RED_LEN - 7, BAR_Y - 7),
+                (BAR_X + BAR_RED_LEN + 7, BAR_Y + 7),
+            ],
+            fill="red",
+        )
 
         draw.text((BAR_X, BAR_Y + 15), "00:00", fill="black", font=regular_font)
         end_text = "Live" if is_live else duration_text
-        draw.text((BAR_X + BAR_TOTAL_LEN - (90 if is_live else 60), BAR_Y + 15), end_text, fill="red" if is_live else "black", font=regular_font)
+        draw.text(
+            (BAR_X + BAR_TOTAL_LEN - (90 if is_live else 60), BAR_Y + 15),
+            end_text,
+            fill="red" if is_live else "black",
+            font=regular_font,
+        )
 
         icons_path = "ShrutixMusic/assets/play_icons.png"
         if os.path.isfile(icons_path):
             ic = Image.open(icons_path).resize((ICONS_W, ICONS_H)).convert("RGBA")
             r, g, b, a = ic.split()
-            black_ic = Image.merge("RGBA", (r.point(lambda *_: 0), g.point(lambda *_: 0), b.point(lambda *_: 0), a))
+            black_ic = Image.merge(
+                "RGBA",
+                (
+                    r.point(lambda *_: 0),
+                    g.point(lambda *_: 0),
+                    b.point(lambda *_: 0),
+                    a,
+                ),
+            )
             bg.paste(black_ic, (ICONS_X, ICONS_Y), black_ic)
 
-        font = ImageFont.truetype("ShrutixMusic/assets/font3.ttf", 28)  
+        font = ImageFont.truetype("ShrutixMusic/assets/font3.ttf", 28)
         text = " "
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
