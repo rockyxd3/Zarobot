@@ -218,9 +218,9 @@ async def get_thumb(videoid):
             except:
                 return ImageFont.load_default()
 
-        font_title = safe_font("ShrutixMusic/assets/font2.ttf", 32)
-        font_small = safe_font("ShrutixMusic/assets/font.ttf", 28)
-        font_brand = safe_font("ShrutixMusic/assets.font.ttf", 40) if False else safe_font("ShrutixMusic/assets/font.ttf", 40)
+        font_title = safe_font("AloneMusic/assets/font2.ttf", 32)
+        font_small = safe_font("AloneMusic/assets/font.ttf", 28)
+        font_brand = safe_font("AloneMusic/assets.font.ttf", 40) if False else safe_font("ShrutixMusic/assets/font.ttf", 40)
 
         draw = ImageDraw.Draw(bg)
 
@@ -273,7 +273,7 @@ async def get_thumb(videoid):
             stroke_fill="black",
         )
 
-        rec_text = "Hi-Res"
+        rec_text = " "
         rec_bbox = draw.textbbox((0, 0), rec_text, font=font_brand)
         rec_w = rec_bbox[2] - rec_bbox[0]
         rec_h = rec_bbox[3] - rec_bbox[1]
