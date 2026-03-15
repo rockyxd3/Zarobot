@@ -1,7 +1,8 @@
 import os
-import aiohttp
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+import aiohttp
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 CACHE = "cache"
 os.makedirs(CACHE, exist_ok=True)
@@ -87,20 +88,10 @@ async def get_thumb(*args):
         small_font = ImageFont.load_default()
 
     # title
-    draw.text(
-        (260, 470),
-        title,
-        font=title_font,
-        fill="white"
-    )
+    draw.text((260, 470), title, font=title_font, fill="white")
 
     # played by
-    draw.text(
-        (260, 540),
-        f"Played By : {user}",
-        font=text_font,
-        fill="#e6e6e6"
-    )
+    draw.text((260, 540), f"Played By : {user}", font=text_font, fill="#e6e6e6")
 
     # avatar
     try:
@@ -116,30 +107,15 @@ async def get_thumb(*args):
     bot_card = round_rect(bot_card, 30)
     canvas.paste(bot_card, (250, 580), bot_card)
 
-    draw.text(
-        (400, 610),
-        "ʑαʀᴀ ᴍᴜsɪᴄ",
-        font=text_font,
-        fill="white"
-    )
+    draw.text((400, 610), "ʑαʀᴀ ᴍᴜsɪᴄ", font=text_font, fill="white")
 
-    draw.text(
-        (400, 650),
-        "ʑαʀᴀ ᴍᴜsɪᴄ",
-        font=small_font,
-        fill="#dddddd"
-    )
+    draw.text((400, 650), "ʑαʀᴀ ᴍᴜsɪᴄ", font=small_font, fill="#dddddd")
 
     # footer
     footer = "ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍᴇᴄᴏ ʙᴏᴛs"
     w = draw.textlength(footer, font=small_font)
 
-    draw.text(
-        ((1280 - w) / 2, 690),
-        footer,
-        font=small_font,
-        fill="white"
-    )
+    draw.text(((1280 - w) / 2, 690), footer, font=small_font, fill="white")
 
     path = f"{CACHE}/thumb.png"
     canvas.save(path)
