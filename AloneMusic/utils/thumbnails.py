@@ -1,147 +1,166 @@
 import os
+import re
+import textwrap
+import random
+
+import aiofiles
 import aiohttp
-from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps, ImageFilter, ImageFont
+from unidecode import unidecode
+from youtubesearchpython.__future__ import VideosSearch
 
-CACHE = "cache"
-os.makedirs(CACHE, exist_ok=True)
-
-ASSETS = "AloneMusic/assets"
+from Spy import app
+from config import YOUTUBE_IMG_URL
 
 
-async def download(url):
-    if not url:
-        return None
+def changeImageSize(maxWidth, maxHeight, image):
+    widthRatio = maxWidth / image.size[0]
+    heightRatio = maxHeight / image.size[1]
+    newWidth = int(widthRatio * image.size[0])
+    newHeight = int(heightRatio * image.size[1])
+    newImage = image.resize((newWidth, newHeight))
+    return newImage
+
+
+def clear(text):
+    list = text.split(" ")
+    title = ""
+    for i in list:
+        if len(title) + len(i) < 60:
+            title += " " + i
+    return title.strip()
+
+
+def get_random_color():
+    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), 255)
+
+
+async def get_thumb(videoid):
+    if os.path.isfile(f"cache/{videoid}.png"):
+        return f"cache/{videoid}.png"
+
+    url = f"https://www.youtube.com/watch?v={videoid}"
     try:
+        results = VideosSearch(url, limit=1)
+        for result in (await results.next())["result"]:
+            try:
+                title = result["title"]
+                title = re.sub("\W+", " ", title)
+                title = title.title()
+            except:
+                title = "Unsupported Title"
+            try:
+                duration = result["duration"]
+            except:
+                duration = "Unknown Mins"
+            thumbnail = result["thumbnails"][0]["url"].split("?")[0]
+            try:
+                views = result["viewCount"]["short"]
+            except:
+                views = "Unknown Views"
+            try:
+                channel = result["channel"]["name"]
+            except:
+                channel = "Unknown Channel"
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                return await resp.read()
-    except:
-        return None
+            async with session.get(thumbnail) as resp:
+                if resp.status == 200:
+                    f = await aiofiles.open(f"cache/thumb{videoid}.png", mode="wb")
+                    await f.write(await resp.read())
+                    await f.close()
 
+        youtube = Image.open(f"cache/thumb{videoid}.png")
+        bg = Image.open(f"Spy/assets/dil.png")
+        image1 = changeImageSize(1280, 720, youtube)
+        image2 = image1.convert("RGBA")
+        background = image2.filter(filter=ImageFilter.BoxBlur(9))
+        enhancer = ImageEnhance.Brightness(background)
+        background = enhancer.enhance(0.5)
 
-def round_rect(img, radius):
-    mask = Image.new("L", img.size, 0)
-    draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle((0, 0, img.size[0], img.size[1]), radius, fill=255)
-    img.putalpha(mask)
-    return img
+        image3 = changeImageSize(1280, 720, bg)
+        image5 = image3.convert("RGBA")
+        Image.alpha_composite(background, image5).save(f"cache/temp{videoid}.png")
 
+        Xcenter = youtube.width / 2
+        Ycenter = youtube.height / 2
+        x1 = Xcenter - 250
+        y1 = Ycenter - 250
+        x2 = Xcenter + 250
+        y2 = Ycenter + 250
 
-def circle(img):
-    mask = Image.new("L", img.size, 0)
-    draw = ImageDraw.Draw(mask)
-    draw.ellipse((0, 0, img.size[0], img.size[1]), fill=255)
-    img.putalpha(mask)
-    return img
+        logo = youtube.crop((x1, y1, x2, y2))
+        logo.thumbnail((360, 360), Image.Resampling.LANCZOS)
 
+        border_size = 13
+        border_color = get_random_color()
 
-async def get_thumb(*args):
+        bordered_logo = Image.new("RGBA", (logo.width + 2 * border_size, logo.height + 2 * border_size), (0, 0, 0, 0))
+        bordered_logo.paste(logo, (border_size, border_size))
 
-    title = "Unknown Song"
-    user = "Unknown"
-    thumb_url = None
+        draw = ImageDraw.Draw(bordered_logo)
+        draw.rectangle(
+            [(0, 0), (bordered_logo.width - 1, bordered_logo.height - 1)],
+            outline=border_color,
+            width=border_size
+        )
 
-    if len(args) == 1:
-        videoid = args[0]
-        thumb_url = f"https://img.youtube.com/vi/{videoid}/maxresdefault.jpg"
+        background.paste(bordered_logo, (750, 160), bordered_logo)
+        background.paste(image3, (0, 0), mask=image3)
 
-    elif len(args) >= 3:
-        title, user, thumb_url = args[:3]
-
-    data = await download(thumb_url)
-
-    if data:
-        yt = Image.open(BytesIO(data)).convert("RGB")
-    else:
-        yt = Image.new("RGB", (1280, 720), (40, 40, 40))
-
-    yt = yt.resize((1280, 720))
-
-    # background blur
-    bg = yt.filter(ImageFilter.GaussianBlur(40))
-
-    canvas = Image.new("RGB", (1280, 720))
-    canvas.paste(bg)
-
-    draw = ImageDraw.Draw(canvas)
-
-    # main preview card
-    preview = yt.resize((820, 360))
-    preview = round_rect(preview, 45)
-    canvas.paste(preview, (230, 90), preview)
-
-    # glass card
-    glass = Image.new("RGBA", (820, 250), (255, 255, 255, 45))
-    glass = round_rect(glass, 40)
-    canvas.paste(glass, (230, 440), glass)
-
-    # load fonts
-    try:
-        title_font = ImageFont.truetype(f"{ASSETS}/font.ttf", 55)
-        text_font = ImageFont.truetype(f"{ASSETS}/font2.ttf", 35)
-        small_font = ImageFont.truetype(f"{ASSETS}/font2.ttf", 28)
-    except:
-        title_font = ImageFont.load_default()
-        text_font = ImageFont.load_default()
-        small_font = ImageFont.load_default()
-
-    # title
-    draw.text(
-        (260, 470),
-        title,
-        font=title_font,
-        fill="white"
-    )
-
-    # played by
-    draw.text(
-        (260, 540),
-        f"Played By : {user}",
-        font=text_font,
-        fill="#e6e6e6"
-    )
-
-    # avatar
-    try:
-        avatar = Image.open(f"{ASSETS}/girl.png").resize((120, 120))
-    except:
-        avatar = yt.resize((120, 120))
-
-    avatar = circle(avatar)
-    canvas.paste(avatar, (260, 585), avatar)
-
-    # small glass card for bot name
-    bot_card = Image.new("RGBA", (600, 110), (255, 255, 255, 55))
-    bot_card = round_rect(bot_card, 30)
-    canvas.paste(bot_card, (250, 580), bot_card)
-
-    draw.text(
-        (400, 610),
-        "ʑαʀᴀ ᴍᴜsɪᴄ",
-        font=text_font,
-        fill="white"
-    )
-
-    draw.text(
-        (400, 650),
-        "ʑαʀᴀ ᴍᴜsɪᴄ",
-        font=small_font,
-        fill="#dddddd"
-    )
-
-    # footer
-    footer = "ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍᴇᴄᴏ ʙᴏᴛs"
-    w = draw.textlength(footer, font=small_font)
-
-    draw.text(
-        ((1280 - w) / 2, 690),
-        footer,
-        font=small_font,
-        fill="white"
-    )
-
-    path = f"{CACHE}/thumb.png"
-    canvas.save(path)
-
-    return path
+        draw = ImageDraw.Draw(background)
+        font = ImageFont.truetype("Spy/assets/font2.ttf", 45)
+        font2 = ImageFont.truetype("Spy/assets/font2.ttf", 70)
+        arial = ImageFont.truetype("Spy/assets/font2.ttf", 30)
+        name_font = ImageFont.truetype("Spy/assets/font.ttf", 30)
+        para = textwrap.wrap(title, width=30)
+        j = 0
+        draw.text((5, 5), f"SpyXDil", fill="white", font=name_font)
+        for line in para:
+            if j == 1:
+                j += 1
+                draw.text(
+                    (60, 260),
+                    f"{line}",
+                    fill="white",
+                    stroke_width=1,
+                    stroke_fill="white",
+                    font=font,
+                )
+            if j == 0:
+                j += 1
+                draw.text(
+                    (60, 210),
+                    f"{line}",
+                    fill="white",
+                    stroke_width=1,
+                    stroke_fill="white",
+                    font=font,
+                )
+        draw.text(
+            (20, 675),
+            f"{channel} | {views[:23]}",
+            (255, 255, 255),
+            font=arial,
+        )
+        draw.text(
+            (60, 400),
+            "00:00",
+            (255, 255, 255),
+            font=arial,
+        )
+        draw.text(
+            (610, 400),
+            f"{duration[:23]}",
+            (255, 255, 255),
+            font=arial,
+        )
+        try:
+            os.remove(f"cache/thumb{videoid}.png")
+        except:
+            pass
+        background.save(f"cache/{videoid}.png")
+        return f"cache/{videoid}.png"
+    except Exception as e:
+        print(e)
+        return YOUTUBE_IMG_URL
