@@ -113,14 +113,14 @@ async def get_thumb(videoid):
             return YOUTUBE_IMG_URL
 
         full_bg = changeImageSize(1280, 720, youtube.copy()).convert("RGBA")
-        blurred_bg = full_bg.filter(ImageFilter.GaussianBlur(48))
+        blurred_bg = full_bg.filter(ImageFilter.GaussianBlur(55))
 
         bar_color = get_dominant_color(youtube.copy())
         accent = tuple(min(255, int(c * 1.25) + 20) for c in bar_color)
         contrast_color = get_contrasting_color(bar_color)
 
-        enhancer_b = ImageEnhance.Brightness(blurred_bg).enhance(0.48)
-        enhancer_c = ImageEnhance.Color(enhancer_b).enhance(0.78)
+        enhancer_b = ImageEnhance.Brightness(blurred_bg).enhance(0.40)
+        enhancer_c = ImageEnhance.Color(enhancer_b).enhance(0.85)
         bg = enhancer_c
 
         color_overlay = Image.new("RGBA", bg.size, (accent[0], accent[1], accent[2], 140))
