@@ -7,9 +7,9 @@ import aiofiles
 import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageOps, ImageFilter, ImageFont
 from unidecode import unidecode
-from youtubesearchpython.__future__ import VideosSearch
+from py_yt import VideosSearch
 
-from Spy import app
+from AloneMusic import app
 from config import YOUTUBE_IMG_URL
 
 
@@ -71,7 +71,7 @@ async def get_thumb(videoid):
                     await f.close()
 
         youtube = Image.open(f"cache/thumb{videoid}.png")
-        bg = Image.open(f"Spy/assets/dil.png")
+        bg = Image.open(f"AloneMusic/assets/dil.png")
         image1 = changeImageSize(1280, 720, youtube)
         image2 = image1.convert("RGBA")
         background = image2.filter(filter=ImageFilter.BoxBlur(9))
@@ -109,10 +109,10 @@ async def get_thumb(videoid):
         background.paste(image3, (0, 0), mask=image3)
 
         draw = ImageDraw.Draw(background)
-        font = ImageFont.truetype("Spy/assets/font2.ttf", 45)
-        font2 = ImageFont.truetype("Spy/assets/font2.ttf", 70)
-        arial = ImageFont.truetype("Spy/assets/font2.ttf", 30)
-        name_font = ImageFont.truetype("Spy/assets/font.ttf", 30)
+        font = ImageFont.truetype("AloneMusic/assets/font2.ttf", 45)
+        font2 = ImageFont.truetype("AloneMusic/assets/font2.ttf", 70)
+        arial = ImageFont.truetype("AloneMusic/assets/font2.ttf", 30)
+        name_font = ImageFont.truetype("AloneMusic/assets/font.ttf", 30)
         para = textwrap.wrap(title, width=30)
         j = 0
         draw.text((5, 5), f"SpyXDil", fill="white", font=name_font)
