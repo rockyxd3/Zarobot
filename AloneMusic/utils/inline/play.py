@@ -68,70 +68,36 @@ def stream_markup_timer(_, chat_id, played, dur):
         bar = "|—————————♬|"
 
     buttons = [
-                [
+        [
             InlineKeyboardButton(
-                text=f"{played} {bar} {dur}",
-                callback_data="GetTimer",
-                style=ButtonStyle.PRIMARY,
-                icon_custom_emoji_id=5204046146955153467
+                text=f"{played} {bar} {remaining}",
+                url=f"https://t.me/{app.username}?startgroup=true",
             )
         ],
         [
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Resume|{chat_id}", icon_custom_emoji_id=5409222721869459068),
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Pause|{chat_id}", icon_custom_emoji_id=5409042015415448331),
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Stop|{chat_id}", icon_custom_emoji_id=5408832111773757273),
+            InlineKeyboardButton(text="▷", callback_data=f"ADMIN Resume|{chat_id}"),
+            InlineKeyboardButton(text="II", callback_data=f"ADMIN Pause|{chat_id}"),
+            InlineKeyboardButton(text="‣‣I", callback_data=f"ADMIN Skip|{chat_id}"),
+            InlineKeyboardButton(text="↻", callback_data=f"ADMIN Replay|{chat_id}"),
+            InlineKeyboardButton(text="▢", callback_data=f"ADMIN Stop|{chat_id}"),
         ],
-        [
-            InlineKeyboardButton(
-                text="ᴛᴜηєs",
-                url="http://t.me/TidalXMusicBot/tidaltunes",
-                icon_custom_emoji_id=5409025823388741707,
-                style=ButtonStyle.PRIMARY
-                
-            ),
-            InlineKeyboardButton(
-                text="ʜᴏϻє",
-                url="https://t.me/drx_supportchat",
-                icon_custom_emoji_id=5409194306365829029,
-                style=ButtonStyle.PRIMARY
-            
-            )
-        ],
-            
-
         [InlineKeyboardButton(text=" ᴄʟᴏsᴇ ▣", callback_data="close", style=ButtonStyle.DANGER, icon_custom_emoji_id=5408832111773757273)],
     ]
     return buttons
-
 
 def stream_markup(_, chat_id):
     buttons = [
         [
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Resume|{chat_id}", icon_custom_emoji_id=5409222721869459068),
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Pause|{chat_id}", icon_custom_emoji_id=5409042015415448331),
-            InlineKeyboardButton(text="", callback_data=f"ADMIN Stop|{chat_id}", icon_custom_emoji_id=5408832111773757273),
+            InlineKeyboardButton(text="▷", callback_data=f"ADMIN Resume|{chat_id}"),
+            InlineKeyboardButton(text="II", callback_data=f"ADMIN Pause|{chat_id}"),
+            InlineKeyboardButton(text="↻", callback_data=f"ADMIN Replay|{chat_id}"),
+            InlineKeyboardButton(text="‣‣I", callback_data=f"ADMIN Skip|{chat_id}"),
+            InlineKeyboardButton(text="▢", callback_data=f"ADMIN Stop|{chat_id}"),
         ],
-        [
-            InlineKeyboardButton(
-                text="ᴛᴜηєs",
-                url="http://t.me/TidalXMusicBot/tidaltunes",
-                 icon_custom_emoji_id=5409025823388741707,
-                style=ButtonStyle.PRIMARY
-                
-            ),
-            InlineKeyboardButton(
-                text="ʜᴏϻє",
-                url="https://t.me/drx_supportchat",
-                icon_custom_emoji_id=5409194306365829029,
-                style=ButtonStyle.PRIMARY
-            
-            )
-        ],
-            
-
         [InlineKeyboardButton(text=" ᴄʟᴏsᴇ ▣", callback_data="close", style=ButtonStyle.DANGER, icon_custom_emoji_id=5408832111773757273)],
     ]
     return buttons
+
 
 def playlist_markup(_, videoid, user_id, ptype, channel, fplay):
     buttons = [
