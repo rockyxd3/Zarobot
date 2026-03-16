@@ -152,7 +152,6 @@ class Call(PyTgCalls):
 
     @capture_internal_err
     async def stop_stream(self, chat_id: int):
-        await delete_old_message(chat_id)
         assistant = await group_assistant(self, chat_id)
         try:
             await _clear_(chat_id)
@@ -324,7 +323,6 @@ class Call(PyTgCalls):
 
     @capture_internal_err
     async def change_stream(self, client: PyTgCalls, chat_id: int):
-        await delete_old_message(chat_id)
         check = db.get(chat_id)
         popped = None
         loop = await get_loop(chat_id)
