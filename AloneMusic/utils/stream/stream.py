@@ -111,7 +111,6 @@ async def stream(
                 run = await app.send_photo(
                     original_chat_id,
                     photo=img,
-                    has_spoiler=True,
                     caption=_["stream_1"].format(
                         f"https://t.me/{app.username}?start=info_{vidid}",
                         title[:23],
@@ -135,7 +134,6 @@ async def stream(
             upl = close_markup(_)
             return await app.send_photo(
                 original_chat_id,
-                has_spoiler=True,
                 photo=carbon,
                 caption=_["play_21"].format(position, link),
                 reply_markup=upl,
@@ -200,7 +198,6 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=img,
-                has_spoiler=True,
                 caption=_["stream_1"].format(
                     f"https://t.me/{app.username}?start=info_{vidid}",
                     title[:23],
@@ -254,7 +251,6 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=config.SOUNCLOUD_IMG_URL,
-                has_spoiler=True,
                 caption=_["stream_1"].format(
                     config.SUPPORT_CHAT, title[:23], duration_min, user_name
                 ),
@@ -308,7 +304,6 @@ async def stream(
             button = stream_markup(_, chat_id)
             run = await app.send_photo(
                 original_chat_id,
-                has_spoiler=True,
                 photo=config.TELEGRAM_VIDEO_URL if video else config.TELEGRAM_AUDIO_URL,
                 caption=_["stream_1"].format(link, title[:23], duration_min, user_name),
                 reply_markup=InlineKeyboardMarkup(button),
@@ -371,7 +366,6 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=img,
-                has_spoiler=True,
                 caption=_["stream_1"].format(
                     f"https://t.me/{app.username}?start=info_{vidid}",
                     title[:23],
@@ -427,7 +421,6 @@ async def stream(
             run = await app.send_photo(
                 original_chat_id,
                 photo=config.STREAM_IMG_URL,
-                has_spoiler=True,
                 caption=_["stream_2"].format(user_name),
                 reply_markup=InlineKeyboardMarkup(button),
             )
