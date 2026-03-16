@@ -30,30 +30,13 @@ from AloneMusic.utils.logger import play_logs
 from AloneMusic.utils.stream.stream import stream
 from config import BANNED_USERS, lyrical
 
-EMOJII = [
-    "🔥",
-    "💋",
-    "🥺",
-    "😒",
-    "💖",
-    "💘",
-    "💕",
-    "✨",
-    "🧪",
-    "🥰",
-    "🚩",
-    "🫦",
-    "💔",
-    "🦠",
-    "😓",
-    "🫧",
-]
+EMOJII = []
 
 
 async def delete_after_delay(msg):
     try:
-        await asyncio.sleep(60)
-        await msg.delete()
+        #await asyncio.sleep(60)
+        #await msg.delete()
     except Exception:
         pass
 
