@@ -35,7 +35,6 @@ EMOJII = []
 
 async def delete_after_delay(msg):
     return
-      
 
 
 @app.on_message(
