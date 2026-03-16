@@ -138,7 +138,6 @@ async def skip(cli, message: Message, _, chat_id):
         await delete_old_message(chat_id)
         run = await message.reply_photo(
             photo=img,
-            has_spoiler=True,
             caption=_["stream_1"].format(
                 f"https://t.me/{app.username}?start=info_{videoid}",
                 title[:23],
@@ -173,7 +172,6 @@ async def skip(cli, message: Message, _, chat_id):
         await delete_old_message(chat_id)
         run = await message.reply_photo(
             photo=img,
-            has_spoiler=True,
             caption=_["stream_1"].format(
                 f"https://t.me/{app.username}?start=info_{videoid}",
                 title[:23],
@@ -194,7 +192,6 @@ async def skip(cli, message: Message, _, chat_id):
         await delete_old_message(chat_id)
         run = await message.reply_photo(
             photo=config.STREAM_IMG_URL,
-            has_spoiler=True,
             caption=_["stream_2"].format(user),
             reply_markup=InlineKeyboardMarkup(button),
         )
@@ -252,7 +249,6 @@ async def skip(cli, message: Message, _, chat_id):
             await delete_old_message(chat_id)
             run = await message.reply_photo(
                 photo=img,
-                has_spoiler=True,
                 caption=_["stream_1"].format(
                     f"https://t.me/{app.username}?start=info_{videoid}",
                     title[:23],
