@@ -34,11 +34,8 @@ EMOJII = []
 
 
 async def delete_after_delay(msg):
-    try:
-        #await asyncio.sleep(60)
-        #await msg.delete()
-    except Exception:
-        pass
+    return
+      
 
 
 @app.on_message(
