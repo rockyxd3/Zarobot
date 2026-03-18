@@ -10,7 +10,7 @@ from pyrogram.types import Message
 from youtubesearchpython.__future__ import VideosSearch
 from AloneMusic.utils.formatters import time_to_seconds
 import aiohttp
-from Oneforall import LOGGER
+from AloneMusic import LOGGER
 
 logger = LOGGER("AloneMusic.platforms.Youtube")
 
