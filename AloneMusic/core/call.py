@@ -12,7 +12,7 @@ from typing import Union
 
 from ntgcalls import ConnectionNotFound, TelegramServerError
 from pyrogram import Client
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardMarkup
 from pytgcalls import PyTgCalls, exceptions, types
 from pytgcalls.pytgcalls_session import PyTgCallsSession
 
