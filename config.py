@@ -32,6 +32,10 @@ ADS_MODE = getenv("ADS_MODE", None)
 # Chat id of a group for logging bot's activities
 LOGGER_ID = int(getenv("LOGGER_ID", 0))
 
+# Vars For API End Pont.
+YTPROXY_URL = getenv("YTPROXY_URL", 'https://tgapi.xbitcode.com') ## xBit Music Endpoint.
+YT_API_KEY = getenv("YT_API_KEY" , None ) ## Your API key like: xbit_ao3p0zAFfx38MvqQW11X8AfKDm-ffLgQ Get from  https://t.me/tgmusic_apibot
+
 DEBUG_IGNORE_LOG = True
 # Get this value from  on Telegram by /id
 OWNER_ID = int(getenv("OWNER_ID", 8106551502))
