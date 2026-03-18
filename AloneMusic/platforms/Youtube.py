@@ -8,11 +8,11 @@ import yt_dlp
 from pyrogram.enums import MessageEntityType
 from pyrogram.types import Message
 from youtubesearchpython.__future__ import VideosSearch
-from Oneforall.utils.formatters import time_to_seconds
+from AloneMusic.utils.formatters import time_to_seconds
 import aiohttp
 from Oneforall import LOGGER
 
-logger = LOGGER("Oneforall.platforms.Youtube")
+logger = LOGGER("AloneMusic.platforms.Youtube")
 
 # ---------------- SECURITY CONSTANTS ---------------- #
 
