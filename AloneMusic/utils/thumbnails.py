@@ -1,23 +1,19 @@
 # a part of Opus Music Project 2026 ©
-# this code is & will be our property as it is or even after modified 
-# must give credits to @x_ifeelram  if used this code anywhere ever 
+# this code is & will be our property as it is or even after modified
+# must give credits to @x_ifeelram  if used this code anywhere ever
 # change font dir as per your repo dir & this code only works which repository is using yt-search-python install it using pip
 
 import os
 import re
 import textwrap
-import numpy as np
+
 import aiofiles
 import aiohttp
-from PIL import (
-    Image,
-    ImageDraw,
-    ImageEnhance,
-    ImageFilter,
-    ImageFont,
-    ImageOps,
-)
+import numpy as np
+from PIL import (Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont,
+                 ImageOps)
 from py_yt import VideosSearch
+
 from config import YOUTUBE_IMG_URL
 
 
@@ -44,7 +40,7 @@ def get_dominant_color(image):
 
 
 def get_contrasting_color(bg_color):
-    luminance = (0.299 * bg_color[0] + 0.587 * bg_color[1] + 0.114 * bg_color[2])
+    luminance = 0.299 * bg_color[0] + 0.587 * bg_color[1] + 0.114 * bg_color[2]
     return (255, 255, 255) if luminance < 128 else (50, 50, 50)
 
 
@@ -78,7 +74,11 @@ async def get_thumb(videoid):
 
         picked = None
         for it in result_data["result"]:
-            vid = it.get("id") or extract_video_id(it.get("link", "")) or extract_video_id(it.get("url", ""))
+            vid = (
+                it.get("id")
+                or extract_video_id(it.get("link", ""))
+                or extract_video_id(it.get("url", ""))
+            )
             if vid == videoid:
                 picked = it
                 break
@@ -90,7 +90,9 @@ async def get_thumb(videoid):
         thumbs = picked.get("thumbnails") or []
         if not thumbs:
             return YOUTUBE_IMG_URL
-        thumbnail_url = (thumbs[-1].get("url") or thumbs[0].get("url") or "").split("?")[0]
+        thumbnail_url = (thumbs[-1].get("url") or thumbs[0].get("url") or "").split(
+            "?"
+        )[0]
         if not thumbnail_url:
             return YOUTUBE_IMG_URL
 
@@ -117,18 +119,22 @@ async def get_thumb(videoid):
             fit_method = Image.Resampling.LANCZOS
         except AttributeError:
             fit_method = Image.ANTIALIAS
-        full_bg = ImageOps.fit(youtube.copy().convert("RGBA"), (1280, 720), method=fit_method)
+        full_bg = ImageOps.fit(
+            youtube.copy().convert("RGBA"), (1280, 720), method=fit_method
+        )
         blurred_bg = full_bg.filter(ImageFilter.GaussianBlur(16))
 
         bar_color = get_dominant_color(youtube.copy())
         accent = tuple(min(255, int(c * 1.25) + 20) for c in bar_color)
-        contrast_color = get_contrasting_color(bar_color)
+        get_contrasting_color(bar_color)
 
         enhancer_b = ImageEnhance.Brightness(blurred_bg).enhance(0.70)
         enhancer_c = ImageEnhance.Color(enhancer_b).enhance(0.90)
         bg = enhancer_c
 
-        color_overlay = Image.new("RGBA", bg.size, (accent[0], accent[1], accent[2], 24))
+        color_overlay = Image.new(
+            "RGBA", bg.size, (accent[0], accent[1], accent[2], 24)
+        )
         bg = Image.alpha_composite(bg, color_overlay)
 
         subtle_frost = Image.new("RGBA", bg.size, (255, 255, 255, 6))
@@ -176,7 +182,9 @@ async def get_thumb(videoid):
 
         glow_layer = Image.new("RGBA", bg.size, (0, 0, 0, 0))
         glow_size = (center_thumb.width + 140, center_thumb.height + 140)
-        glow = Image.new("RGBA", glow_size, (bar_color[0], bar_color[1], bar_color[2], 20))
+        glow = Image.new(
+            "RGBA", glow_size, (bar_color[0], bar_color[1], bar_color[2], 20)
+        )
         glow_pos = (thumb_pos[0] - 70, thumb_pos[1] - 70)
         glow_layer.paste(glow, glow_pos, glow)
         bg = Image.alpha_composite(bg, glow_layer)
@@ -246,7 +254,11 @@ async def get_thumb(videoid):
 
         font_title = safe_font("AloneMusic/assets/font2.ttf", 32)
         font_small = safe_font("AloneMusic/assets/font.ttf", 28)
-        font_brand = safe_font("AloneMusic/assets.font.ttf", 40) if False else safe_font("ShrutixMusic/assets/font.ttf", 40)
+        font_brand = (
+            safe_font("AloneMusic/assets.font.ttf", 40)
+            if False
+            else safe_font("ShrutixMusic/assets/font.ttf", 40)
+        )
 
         draw = ImageDraw.Draw(bg)
 
@@ -272,12 +284,22 @@ async def get_thumb(videoid):
 
         bright_bar = tuple(min(255, c + 40) for c in bar_color)
         draw.rounded_rectangle(
-            [bar_x, bar_y + bar_height - fill_height, bar_x + bar_width, bar_y + bar_height],
+            [
+                bar_x,
+                bar_y + bar_height - fill_height,
+                bar_x + bar_width,
+                bar_y + bar_height,
+            ],
             radius=bar_radius,
             fill=(bright_bar[0], bright_bar[1], bright_bar[2], 255),
         )
 
-        draw.text((bar_x - 50, bar_y + bar_height + 10), "00:25", fill="white", font=font_small)
+        draw.text(
+            (bar_x - 50, bar_y + bar_height + 10),
+            "00:25",
+            fill="white",
+            font=font_small,
+        )
 
         text_left = thumb_pos[0]
         text_top = thumb_pos[1] + center_thumb.height + 33
@@ -301,7 +323,7 @@ async def get_thumb(videoid):
 
         rec_text = " "
         rec_bbox = draw.textbbox((0, 0), rec_text, font=font_brand)
-        rec_w = rec_bbox[2] - rec_bbox[0]
+        rec_bbox[2] - rec_bbox[0]
         rec_h = rec_bbox[3] - rec_bbox[1]
         rec_x = thumb_pos[0] + center_thumb.width + 35
         rec_y = thumb_pos[1] + (center_thumb.height // 2) - (rec_h // 2)

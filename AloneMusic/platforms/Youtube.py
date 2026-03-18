@@ -3,35 +3,48 @@
 import asyncio
 import os
 import re
-from typing import Union
-import yt_dlp
-from pyrogram.enums import MessageEntityType
-from pyrogram.types import Message
-from youtubesearchpython.__future__ import VideosSearch
-from Oneforall.utils.formatters import time_to_seconds
+
 import aiohttp
 from Oneforall import LOGGER
+from Oneforall.utils.formatters import time_to_seconds
+from youtubesearchpython.__future__ import VideosSearch
 
 logger = LOGGER("Oneforall.platforms.Youtube")
 
 # ---------------- SECURITY CONSTANTS ---------------- #
 
-YOUTUBE_URL_PATTERN = re.compile(
-    r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/"
-)
+YOUTUBE_URL_PATTERN = re.compile(r"^(https?://)?(www\.)?(youtube\.com|youtu\.be)/")
 
 DANGEROUS_KEYWORDS = [
     # adult
-    "porn","xxx","sex","hentai","nude","naked","onlyfans","adult",
-
+    "porn",
+    "xxx",
+    "sex",
+    "hentai",
+    "nude",
+    "naked",
+    "onlyfans",
+    "adult",
     # drugs
-    "weed","marijuana","cocaine","heroin","meth","drug","lsd",
-
+    "weed",
+    "marijuana",
+    "cocaine",
+    "heroin",
+    "meth",
+    "drug",
+    "lsd",
     # violent / dangerous
-    "beheading","bomb","explosive","cartel","terrorist",
-
+    "beheading",
+    "bomb",
+    "explosive",
+    "cartel",
+    "terrorist",
     # piracy / copyright bait
-    "full movie","free movie","leaked","camrip","pirated"
+    "full movie",
+    "free movie",
+    "leaked",
+    "camrip",
+    "pirated",
 ]
 
 YOUR_API_URL = None
@@ -39,6 +52,7 @@ FALLBACK_API_URL = "https://vercel.com/txkuzes-projects/admin-music-hub"
 
 
 # ---------------- FILTER FUNCTIONS ---------------- #
+
 
 def contains_dangerous(text: str) -> bool:
     if not text:
@@ -57,6 +71,7 @@ def validate_youtube_url(link: str) -> bool:
 
 
 # ---------------- LOAD API ---------------- #
+
 
 async def load_api_url():
     global YOUR_API_URL
@@ -93,6 +108,7 @@ except RuntimeError:
 
 
 # ---------------- DOWNLOAD AUDIO ---------------- #
+
 
 async def download_song(link: str) -> str:
 
@@ -160,6 +176,7 @@ async def download_song(link: str) -> str:
 
 # ---------------- SAFE PLAYLIST FETCH ---------------- #
 
+
 async def get_playlist_ids(link: str, limit: int):
 
     process = await asyncio.create_subprocess_exec(
@@ -184,6 +201,7 @@ async def get_playlist_ids(link: str, limit: int):
 
 
 # ---------------- MAIN CLASS ---------------- #
+
 
 class YouTubeAPI:
 
@@ -221,7 +239,6 @@ class YouTubeAPI:
 
             return title, duration, duration_sec, thumbnail, vidid
 
-
     async def playlist(self, link, limit, user_id):
 
         if "&" in link:
@@ -233,7 +250,6 @@ class YouTubeAPI:
         ids = await get_playlist_ids(link, limit)
 
         return ids
-
 
     async def track(self, link: str):
 
